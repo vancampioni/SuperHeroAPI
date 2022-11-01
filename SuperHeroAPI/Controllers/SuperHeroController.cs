@@ -1,4 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using SuperHeroAPI.Data.EfCore;
+using SuperHeroAPI.Services;
 
 namespace SuperHeroAPI.Controllers
 {
@@ -6,41 +8,24 @@ namespace SuperHeroAPI.Controllers
     [ApiController]
     public class SuperHeroController : ControllerBase
     {
-        private static List<SuperHero> heroes = new List<SuperHero> // Have access from everywhere
-            {
-                new SuperHero {
-                    Id = 1,
-                    Name = "Spider Man",
-                    FirstName = "Peter",
-                    LastName = "Parker",
-                    Place = "New York City"
-                },
 
-                new SuperHero {
-                    Id = 2,
-                    Name = "Wonder Woman",
-                    FirstName = "Diana",
-                    LastName = "Prince",
-                    Place = "Themyscira"
-                }
-            };
-        private readonly DataContext _context;
+        IAdminService _service;
 
-        public SuperHeroController(DataContext context)
+        public SuperHeroController(IAdminService service)
         {
-            _context = context;
+            _service = service;
         }
 
         [HttpGet]
-        public async Task<ActionResult<List<SuperHero>>> Get()
+        public IActionResult Get()
         {
-            return Ok(await _context.SuperHeroes.ToListAsync()); // StatusCode 200 (everything went fine)
+            return Ok(_service.GetAllSuperHeroes()); // StatusCode 200 (everything went fine)
         }
 
         [HttpGet("{id}")] // Parameter for the route
-        public async Task<ActionResult<List<SuperHero>>> GetById(int id)
+        public IActionResult GetById(int id)
         {
-            var hero = await _context.SuperHeroes.FindAsync(id);
+            var hero = _service.GetSuperHeroById(id);
             if(hero == null)
             {
                 return BadRequest("Hero not found.");
@@ -51,47 +36,37 @@ namespace SuperHeroAPI.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult<List<SuperHero>>> AddHero(SuperHero hero)
+        public IActionResult AddHero(SuperHero hero)
         {
-            _context.SuperHeroes.Add(hero);
-            await _context.SaveChangesAsync(); 
+            _service.AddSuperHero(hero);
 
-            return Ok(await _context.SuperHeroes.ToListAsync()); // StatusCode 200 (everything went fine)
+            return Ok(hero); // StatusCode 200 (everything went fine)
         }
 
         [HttpPut]
-        public async Task<ActionResult<List<SuperHero>>> UpdateHero(SuperHero request) // Refactor
+        public IActionResult UpdateHero(SuperHero superHero) // Refactor
         {
-            var dbHero = await _context.SuperHeroes.FindAsync(request.Id);
-            if (dbHero == null)
+            if(_service.GetSuperHeroById(superHero.Id) == null)
             {
-                return BadRequest("Hero not found.");
+                return NotFound();
             } else
             {
-                dbHero.Name = request.Name;
-                dbHero.FirstName = request.FirstName;
-                dbHero.LastName = request.LastName;
-                dbHero.Place = request.Place;
-
-                await _context.SaveChangesAsync();
-
-                return Ok(await _context.SuperHeroes.ToListAsync());
+                _service.UpdateSuperHero(superHero);
+                return Ok(superHero);
             }
         }
 
         [HttpDelete("{id}")] // Parameter for the route
-        public async Task<ActionResult<List<SuperHero>>> Delete(int id)
+        public IActionResult Delete(int id)
         {
-            var dbHero = await _context.SuperHeroes.FindAsync(id);
-            if (dbHero == null)
+            var superHero = _service.GetSuperHeroById(id);
+            if(superHero == null)
             {
-                return BadRequest("Hero not found.");
-            }
-            else
+                return NotFound();
+            } else
             {
-                _context.SuperHeroes.Remove(dbHero);
-                await _context.SaveChangesAsync();
-                return Ok(await _context.SuperHeroes.ToListAsync());
+                _service.DeleteSuperHero(superHero);
+                return NoContent();
             }
         }
     }

@@ -1,5 +1,6 @@
 global using SuperHeroAPI.Data;
 global using Microsoft.EntityFrameworkCore;
+using SuperHeroAPI.Data.EfCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
